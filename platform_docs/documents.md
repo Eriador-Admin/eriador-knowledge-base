@@ -12,6 +12,7 @@ Documents live inside **spaces** — containers that control who can see and edi
 |---|---|---|---|---|
 | **Personal** | Created automatically for each user | Owner only | Owner only | 🔒 |
 | **Organizational** | Tenant admin | Users with write/admin permission | Users with read permission (or everyone if published) | 📂 |
+| **External (Confluence)** | Tenant admin (via Connect) | Users with permission (edits sync to Confluence) | Users with read permission | 🔗 |
 | **Global** | Platform admin (platform-wide) | Platform admin only | All tenants (read-only) | 🌐 |
 
 ```mermaid
@@ -100,6 +101,19 @@ Tenant admins create organizational spaces to suit their team's needs — for ex
 | Admin | Full control — edit space settings, manage permissions, delete documents |
 
 > **Tip:** Use groups to manage access at scale. Instead of assigning permissions to each user individually, create a group (e.g., "Engineering") in User Management, then grant that group access to relevant spaces.
+
+### External Spaces (Confluence)
+
+External spaces connect Belfalas to your organization's **Confluence** instance. They appear under **External Spaces** in the Document Hub sidebar with a 🔗 link icon. Two sync modes are available:
+
+| Mode | How It Works | Best For |
+|---|---|---|
+| **Proxy** | Documents are fetched live from Confluence on every access — nothing is stored locally | Real-time accuracy, zero data duplication |
+| **Cached** | Documents are synced and stored locally as Markdown copies | Fast access, offline browsing, full-text search |
+
+A small badge next to the space name indicates the mode: **proxy** (yellow) or **cached** (green).
+
+> For details on connecting Confluence, managing permissions, and working with external documents, see the **Confluence Integration** guide.
 
 ### Global Spaces
 
@@ -234,6 +248,8 @@ Add **tags** to your documents to categorize and organize them. Tags appear on d
 ### AI Agent Access
 
 Each document has an **AI Agent Access** toggle that controls whether the AI assistant can reference the document when answering questions. This is enabled by default. Disable it for sensitive drafts or documents you don't want the AI to surface.
+
+For Confluence spaces, agent access is also controlled at the **space level** by the tenant admin. Both the space-level and document-level toggles must be enabled for the AI to access a document.
 
 ### Auto-Save
 
@@ -556,6 +572,8 @@ graph LR
     style Organizational fill:#252526,color:#e0e0e0,stroke:#2ea043
     style Global fill:#252526,color:#e0e0e0,stroke:#0e639c
 ```
+
+> **Note:** External (Confluence) spaces share the same permission model as Organizational spaces but sync content with an external Confluence instance. See the Confluence Integration guide for details.
 
 ### Document Status Quick Reference
 

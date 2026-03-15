@@ -20,9 +20,18 @@ The Document Management page has two tabs: **Space Management** and **Document S
 
 Organizational spaces are shared containers for your team's documentation. They appear under **Organizational Spaces** in the Document Hub sidebar for users with access.
 
-1. Click **+ New Space**
+1. Click **+ Add** in the toolbar, then select **📂 New Space**
 2. Enter a name, description, and visibility setting
 3. Click **Create**
+
+### Connecting a Confluence Space
+
+You can connect an external Confluence space directly from the same menu.
+
+1. Click **+ Add** in the toolbar, then select **🔗 Connect Confluence**
+2. Follow the connect flow to select an integration, space, and sync mode
+
+For the full connection walkthrough, see the **Confluence Integration — Administration Guide**.
 
 ### Editing Organizational Spaces
 
@@ -191,11 +200,17 @@ As an admin, you manage the organizational spaces (and their folder structures) 
 
 ## AI Agent Integration
 
-All global documentation is automatically available to the AI assistant. When a user chats with the assistant on a specific page, any global documents matching that page's routes are injected into the assistant's context. This means the AI can answer questions about platform features using the global documentation — no configuration needed on your part.
+All global documentation is automatically available to the AI assistant. When a user chats with the assistant on a specific page, any global documents matching that page's routes are injected into the assistant's context.
 
-Individual documents also have an **AI Agent Access** toggle that authors can use to control whether a specific document is available to the AI assistant. This is enabled by default.
+Individual documents have an **AI Agent Access** toggle that authors can use to control whether a specific document is available to the AI assistant (enabled by default).
 
-Tenant admins control which global spaces are visible to their users (see "Controlling Global Space Visibility" above), which also affects what the AI assistant can reference for those users.
+For **organizational and external (Confluence) spaces**, there is an additional **space-level** Agent Access toggle. Both the space-level and document-level toggles must be enabled for the AI to access documents in that space.
+
+**Document Settings** also includes:
+
+- **Allow Agent Sharing on Confluence Spaces** — Controls whether agents can access documents in personal Confluence spaces. Scoped to personal external spaces only.
+
+> For full details on agent access for Confluence spaces, see the **Confluence Integration — Administration Guide**.
 
 ---
 

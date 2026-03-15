@@ -12,7 +12,15 @@ Documents are a shared, versioned knowledge base built into Belfalas. They live 
 |---|---|---|
 | **Personal** | Private to each user, auto-created | Always accessible for the current user's space |
 | **Organizational** | Shared within a tenant, admin-created | Only if `agent_access_enabled` is true on the space |
+| **External (Confluence)** | Connected to a Confluence instance | Only if `agent_access_enabled` is true on the space |
 | **Global** | Platform-wide, read-only for tenants | Read-only, always accessible |
+
+External spaces operate in one of two sync modes:
+
+| Mode | Behavior for Agent Tools |
+|---|---|
+| **Proxy** | Content is fetched live from Confluence on every read. Search uses Confluence CQL. No local versioning. |
+| **Cached** | Content is stored locally as Markdown. Search uses full-text. Auto-syncs if stale (>5 min). |
 
 Documents follow a lifecycle: **Draft → Published → Archived**. Agents primarily work with **draft** documents in the current user's **personal space**. Publishing is a separate, confirmation-gated action.
 
@@ -25,10 +33,11 @@ Each document has an **AI Agent Access** toggle (enabled by default). If the doc
 Before calling any tool, understand these constraints — they are enforced by every tool:
 
 1. **Agent access toggle (document-level):** The document's `agentAccessEnabled` flag must be `true`. If disabled, the tool returns an error asking the owner to re-enable it.
-2. **Agent access toggle (space-level):** For organizational spaces, the space's `agent_access_enabled` flag must be `true`. If disabled, an admin must enable it.
+2. **Agent access toggle (space-level):** For organizational and external spaces, the space's `agent_access_enabled` flag must be `true`. If disabled, an admin must enable it.
 3. **Ownership for writes:** Agents can only create, update, move, or version documents **owned by the current user**. You cannot modify another user's document.
 4. **Draft-only updates:** Agents can only update documents with `status: "draft"`. Published or archived documents must be reverted to draft by the user before the agent can edit them.
 5. **Publishing requires confirmation:** The `publish_document` tool has `_requires_confirmation: true` — the user must approve before execution proceeds.
+6. **External space writes:** When creating documents in an external (Confluence) space, the document is automatically synced to Confluence. The document is created as `published` (not `draft`) since it lives in Confluence.
 
 ---
 
@@ -39,6 +48,8 @@ All document tools belong to the `knowledge_base` category. Each tool returns `{
 ### 1. `search_documents` — Find documents
 
 Search the knowledge base using full-text search. Use this first to find relevant specs, runbooks, or architecture docs before working on a task.
+
+For **proxy-mode Confluence spaces**, the search automatically uses Confluence's CQL query engine instead of local full-text search. Results include titles, URLs, and content snippets from Confluence.
 
 **Parameters:**
 
@@ -68,6 +79,8 @@ Search the knowledge base using full-text search. Use this first to find relevan
 ### 2. `read_document` — Read a document's content
 
 Read the full markdown content of a specific document. You can look up by UUID or by space + document slugs.
+
+For **Confluence documents**: proxy-mode documents are fetched live from Confluence on every read. Cached-mode documents are auto-synced if the local copy is older than 5 minutes.
 
 **Parameters:**
 
@@ -102,9 +115,11 @@ You must provide either `document_id` **or** both `space_slug` + `doc_slug`.
 
 ---
 
-### 3. `create_document` — Create a new draft
+### 3. `create_document` — Create a new document
 
-Create a new document in the user's **personal space**. Documents are always created as drafts — the user can review and publish later.
+Create a new document. By default, documents are created as drafts in the user's **personal space**. You can optionally specify a `space_slug` to create in an organizational or external (Confluence) space.
+
+When creating in an **external space**, the document is automatically synced to Confluence and created with `published` status.
 
 **Parameters:**
 
@@ -112,10 +127,11 @@ Create a new document in the user's **personal space**. Documents are always cre
 |---|---|---|---|
 | `title` | string | yes | Document title |
 | `content` | string | yes | Markdown content |
+| `space_slug` | string | no | Target space slug (e.g. `"engineering"`, `"confluence-dev"`). Defaults to personal space. |
 | `visibility` | string | no | `private` (default) or `workspace` |
 | `tags` | string[] | no | Tags for categorization (e.g. `["api", "architecture"]`) |
 
-**Example call:**
+**Example calls:**
 ```json
 {
   "name": "create_document",
@@ -126,8 +142,18 @@ Create a new document in the user's **personal space**. Documents are always cre
   }
 }
 ```
+```json
+{
+  "name": "create_document",
+  "arguments": {
+    "title": "Deploy Runbook",
+    "content": "# Deployment Steps\n\n...",
+    "space_slug": "confluence-ops"
+  }
+}
+```
 
-**Returns:** Confirmation with the document ID, title, word count, and personal space name.
+**Returns:** Confirmation with the document ID, title, word count, space name, and sync status (for external spaces).
 
 ---
 
@@ -471,7 +497,7 @@ All tools return `{ success: false, result: "<message>" }` on failure. Common er
 | Error | Cause | Resolution |
 |---|---|---|
 | `"Agent access is disabled for this document"` | Document owner turned off the AI Agent Access toggle | Ask the user to re-enable it in document settings |
-| `"Agent access is disabled for space ..."` | Org space has `agent_access_enabled = false` | An admin must enable agent access on the space |
+| `"Agent access is disabled for space ..."` | Org or external space has `agent_access_enabled = false` | An admin must enable agent access on the space |
 | `"Agents can only update documents owned by the current user"` | Attempting to modify another user's document | Only the document owner's agent can modify it |
 | `"Cannot update a published document"` | Document is not in draft status | User must unpublish/revert to draft first |
 | `"Document not found"` | Invalid ID or the document was deleted | Verify the ID or search again |
@@ -487,3 +513,4 @@ All tools return `{ success: false, result: "<message>" }` on failure. Common er
 - **Version snapshots** are immutable point-in-time captures. The current auto-saved content is separate from version snapshots. Creating a version freezes the current state.
 - **Publishing** creates a snapshot visible to space readers. It does not move the document — it remains in the author's personal space. A single document can be published to multiple spaces simultaneously.
 - **Ticket links** are bidirectional — they appear on both the document and the ticket. Link types (`spec`, `runbook`, `post_mortem`, `requirement`, `reference`) categorize the relationship.
+- **Confluence integration** — External spaces connect to Confluence. Proxy mode fetches live; cached mode stores locally. Creating documents in external spaces automatically syncs them to Confluence. Agent tools work transparently across both modes.
